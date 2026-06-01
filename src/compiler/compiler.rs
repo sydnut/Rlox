@@ -1,8 +1,8 @@
+use crate::chunk::Chunk;
 use crate::compiler::scanner::Scanner;
 use crate::compiler::token::{Token, TokenType};
 
-pub fn compile(source: &str) {
-    //todo initScanner
+pub fn compile(source: &str,chunk: &mut Chunk)->bool {
     let mut scanner = Scanner::new(source);
     let mut line = -1;
     loop {
@@ -19,4 +19,5 @@ pub fn compile(source: &str) {
             _ => {}
         }
     }
+    true
 }

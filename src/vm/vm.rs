@@ -1,8 +1,10 @@
 use crate::bytecode::OpCode::*;
 use crate::chunk::value::Value;
 use crate::chunk::*;
+use crate::compiler::compiler;
+
 pub struct VM {
-    chunk: Box<Chunk>,
+    chunk: Chunk,
     /// ip:指令指针,这里最好可以实现成idx
     ip: usize,
     stack: Vec<Value>,
@@ -17,16 +19,21 @@ pub enum InterpretResult {
 impl VM {
     pub fn new() -> VM {
         VM {
-            chunk: Box::new(Chunk::new()),
+            chunk: Chunk::new(),
             ip: 0,
             stack: Vec::with_capacity(STACK_MAX),
             stack_top: 0,
         }
     }
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        self.chunk = Box::new(chunk);
+        let mut chunk = Chunk::new();
+        if !compiler::compile(source,&mut chunk){
+            return InterpretResult::InterpretCompileError;
+        }
         self.ip = 0;
-        self.run()
+        self.chunk=chunk;
+        InterpretResult::InterpretOk
+        // self.run()
     }
 
     fn run(&mut self) -> InterpretResult {

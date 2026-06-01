@@ -6,7 +6,6 @@ use crate::chunk::OpCode;
 pub struct Chunk {
     //uint8* code
     pub code: Vec<u8>,
-    count: u32,
     capacity: u32,
     value_array: ValueArray,
     lines: Lines,
@@ -19,7 +18,6 @@ impl Chunk {
     pub fn new() -> Self {
         Chunk {
             code: vec![],
-            count: 0,
             capacity: 0,
             value_array: ValueArray::new(),
             lines: Lines::new(),
@@ -28,7 +26,6 @@ impl Chunk {
     pub fn write_chunk(&mut self, byte: u8, line: u32) {
         self.code.push(byte);
         self.lines.add_line(line);
-        self.count += 1;
         self.capacity = self.code.capacity() as u32;
     }
     pub fn write_constant(&mut self, value: Value, line: u32) {
@@ -50,7 +47,6 @@ impl Chunk {
             self.write_chunk(self.value_array.count() as u8 - 1, line);
         }
         self.lines.add_line(line);
-        self.count += 1;
         self.capacity = self.code.capacity() as u32;
     }
 
@@ -65,8 +61,8 @@ impl Chunk {
     pub fn disassemble(&self, msg: &str) {
         println!("== {} ==", msg);
         let mut offset = 0;
-        while offset < self.count {
-            offset = self.disassemble_instruction(offset);
+        while offset < self.code.len() {
+            offset = self.disassemble_instruction(offset as u32) as usize;
         }
     }
     fn constant_instruction(&self, name: &str, offset: u32) -> u32 {

@@ -26,32 +26,51 @@ impl<'a> Token<'a> {
             )
         }
     }
-    pub fn error(str: &str, line: i32) -> Token {
+    pub fn error(str: &'_ str, line: i32) -> Token<'_> {
         Token::new(TokenType::Error, str, str.len(), line)
     }
 }
 #[derive(Debug)]
 pub enum TokenType {
     // Single-character tokens. 单字符词法
+    //(
     LeftParen,
+    //)
     RightParen,
+    //{
     LeftBrace,
+    //}
     RightBrace,
+    //,
     Comma,
+    //.
     Dot,
+    //-
     Minus,
+    //+
     Plus,
+    //;
     Semicolon,
+    // /
     Slash,
+    //*
     Star,
     // One or two character tokens. 一或两字符词法
+    //'!'
     Bang,
+    //'!='
     BangEqual,
+    //=
     Equal,
+    //==
     EqualEqual,
+    //>
     Greater,
+    //>=
     GreaterEqual,
+    //<
     Less,
+    //<=
     LessEqual,
     // Literals. 字面量
     Identifier,
