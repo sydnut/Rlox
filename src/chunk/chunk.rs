@@ -96,7 +96,7 @@ impl Chunk {
             OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
             OpCode::OpConstant => self.constant_instruction("OP_CONSTANT", offset),
             OpCode::OpConstantLong => self.constant_long_instruction("OP_CONSTANT_LONG", offset),
-            OpCode::OpNegate=> simple_instruction("OP_NEGATE", offset),
+            OpCode::OpNegate => simple_instruction("OP_NEGATE", offset),
             OpCode::OpAdd => simple_instruction("OP_ADD", offset),
             OpCode::OpSub => simple_instruction("OP_SUBTRACT", offset),
             OpCode::OpMul => simple_instruction("OP_MULT", offset),

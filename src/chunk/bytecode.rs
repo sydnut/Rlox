@@ -1,5 +1,5 @@
 #[repr(u8)]
-pub enum OpCode{
+pub enum OpCode {
     OpReturn = 0,
     OpConstant = 1,
     OpConstantLong = 2,

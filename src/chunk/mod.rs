@@ -1,6 +1,6 @@
-pub mod chunk;
 pub mod bytecode;
-pub mod value;
+pub mod chunk;
 pub mod line;
+pub mod value;
 
-pub use {chunk::*, bytecode::*};
+pub use {bytecode::*, chunk::*};
