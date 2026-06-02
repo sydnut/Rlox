@@ -35,6 +35,7 @@ fn repl(vm: &mut VM) {
                 break;
             }
             Ok(_) => {
+                line.push('\0');
                 vm.interpret(&line);
             }
             Err(err) => {

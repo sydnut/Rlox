@@ -26,14 +26,13 @@ impl VM {
         }
     }
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        let chunk = Chunk::new();
-        if !compiler::compile(source, chunk.clone()){
-            return InterpretResult::InterpretCompileError;
-        }
+        let chunk = match compiler::compile(source) {
+            Some(c) => c,
+            None => return InterpretResult::InterpretCompileError,
+        };
+        self.chunk = chunk;
         self.ip = 0;
-        self.chunk=chunk;
-        InterpretResult::InterpretOk
-        // self.run()
+        self.run()
     }
 
     fn run(&mut self) -> InterpretResult {
@@ -48,6 +47,7 @@ impl VM {
             self.chunk.disassemble_instruction(self.ip as u32);
             match OpCode::try_from(self.read_byte()).unwrap_or(OpReturn) {
                 OpReturn => {
+                    println!("{}", self.pop());
                     return InterpretResult::InterpretOk;
                 }
                 OpConstant => {
