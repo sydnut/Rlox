@@ -1,5 +1,6 @@
 use crate::compiler::scanner::Scanner;
 use std::fmt::{Display, Formatter};
+#[derive(Debug,Copy, Clone)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub start: &'a str,
@@ -37,7 +38,7 @@ impl<'a> Token<'a> {
         )
     }
 }
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     // Single-character tokens. 单字符词法
     //(

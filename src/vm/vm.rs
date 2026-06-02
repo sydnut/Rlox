@@ -26,8 +26,8 @@ impl VM {
         }
     }
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        let mut chunk = Chunk::new();
-        if !compiler::compile(source,&mut chunk){
+        let chunk = Chunk::new();
+        if !compiler::compile(source, chunk.clone()){
             return InterpretResult::InterpretCompileError;
         }
         self.ip = 0;

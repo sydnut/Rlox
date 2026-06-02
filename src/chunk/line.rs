@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct Line {
     line: u32,
     count: u32,
@@ -11,7 +11,7 @@ impl Line {
         self.count += 1;
     }
 }
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct Lines {
     lines: Vec<Line>,
 }

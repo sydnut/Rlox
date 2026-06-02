@@ -2,7 +2,7 @@ use super::line::*;
 use super::value::*;
 use crate::chunk::OpCode;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct Chunk {
     //uint8* code
     pub code: Vec<u8>,
@@ -95,7 +95,7 @@ impl Chunk {
             OpCode::OpNegate => simple_instruction("OP_NEGATE", offset),
             OpCode::OpAdd => simple_instruction("OP_ADD", offset),
             OpCode::OpSub => simple_instruction("OP_SUBTRACT", offset),
-            OpCode::OpMul => simple_instruction("OP_MULT", offset),
+            OpCode::OpMul => simple_instruction("OP_MULTI", offset),
             OpCode::OpDiv => simple_instruction("OP_DIV", offset),
             _ => {
                 println!("Unknown opcode {:?}", instruction);

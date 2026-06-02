@@ -1,12 +1,10 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use crate::chunk::Chunk;
 use crate::chunk::OpCode::OpReturn;
 use crate::compiler::scanner::Scanner;
 use crate::compiler::token::{Token, TokenType};
 struct Parser<'a>{
-    current:Rc<RefCell<Token<'a>>>,
-    previous:Rc<RefCell<Token<'a>>>,
+    current:Token<'a>,
+    previous:Token<'a>,
     scanner: Scanner<'a>,
     chunk:Chunk,
     pub had_error:bool,
@@ -15,8 +13,8 @@ struct Parser<'a>{
 impl<'a> Parser<'a> {
     pub fn new(scanner: Scanner<'a>,chunk: Chunk) -> Self {
         Self{
-            current:Rc::new(RefCell::new(Token::default())),
-            previous:Rc::new(RefCell::new(Token::default())),
+            current:Token::default(),
+            previous:Token::default(),
             scanner,
             chunk,
             had_error:false,
@@ -27,22 +25,22 @@ impl<'a> Parser<'a> {
     pub fn end_compiler(&mut self) {
         self.emit_byte(u8::from(OpReturn));
     }
-    fn advance(&mut self) {
+    fn advance(&mut self)->Token{
         //not impl `Copy` trait
-        self.previous = Rc::clone(&self.current);
+        self.previous = self.current;
         loop {
             let next = self.scanner.scan_token();
-            self.current=Rc::new(RefCell::new(next));
-            match self.current.borrow().token_type {
-                TokenType::Error =>break,
-                _=>{}
+            self.current=next;
+            match self.current.token_type {
+                TokenType::Error => { },
+                _=>{return self.current;},
             }
-            let message = self.current.borrow().start;
+            let message = self.current.start;
             self.error_at_current(message);
         }
     }
     fn consume(&mut self,token_type: TokenType,message:&str) {
-        if self.current.borrow().token_type == token_type {
+        if self.current.token_type == token_type {
             self.advance();
             return;
         }
@@ -50,8 +48,9 @@ impl<'a> Parser<'a> {
     }
     /// 生成字节码
     fn emit_byte(&mut self,byte:u8) {
-        self.chunk.write_chunk(byte,self.previous.borrow().line as u32);
+        self.chunk.write_chunk(byte,self.previous.line as u32);
     }
+    /// 批量生成字节码
     fn emit_bytes(&mut self,bytes:&[u8]) {
         bytes.iter().for_each(|&byte| self.emit_byte(byte));
     }
@@ -61,13 +60,13 @@ impl Parser<'_> {
     fn error_at_current(&mut self,message:&str){
         if !self.panic_mode{return;}
         self.panic_mode = true;
-        self.error_at(&self.current.borrow(), message);
+        self.error_at(&self.current, message);
         self.had_error = true;
     }
     fn error(&mut self, message: &str) {
         if !self.panic_mode{return;}
         self.panic_mode = true;
-        self.error_at(&self.previous.borrow(), message);
+        self.error_at(&self.previous, message);
         self.had_error = true;
     }
     fn error_at(&self,token:&Token,message:&str){
@@ -89,6 +88,6 @@ pub fn compile(source: &str,chunk:Chunk)->bool {
     parser.end_compiler();
     !parser.had_error
 }
-fn number(){
+fn expression(){
     
 }
