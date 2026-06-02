@@ -12,12 +12,12 @@ pub mod vm;
 fn main() {
     let mut vm = VM::new();
     // vm.interpret(chunk);
-    let mut args = std::env::args().collect::<Vec<String>>();
-    args.push("resource/ch16.lox".to_string());
+    let args = std::env::args();
     match args.len() {
         1 => repl(&mut vm),
         2 => run_file(&mut vm, &args.last().unwrap()),
         _ => {
+            println!("wrong args:{:?}",args);
             eprintln!("Usage: rLox [path]\n");
             exit(64);
         }

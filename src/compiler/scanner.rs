@@ -8,15 +8,15 @@ pub struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(source: &'_ str) -> Scanner<'_> {
+    pub fn new(source: &'a str) -> Scanner<'a> {
         Scanner {
             start: 0,
             current: 0,
             line: 1,
             source: source.as_bytes(),
-        }
+        } 
     }
-    pub fn scan_token(&'_ mut self) -> Token<'_> {
+    pub fn scan_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
         self.start = self.current;
         if self.is_at_end() {
@@ -83,7 +83,7 @@ fn is_alpha(c: u8) -> bool {
     (c >= b'a' && c <= b'z') || (c >= b'A' && c <= b'Z') || c == b'_'
 }
 //私有辅助函数
-impl Scanner<'_> {
+impl<'a> Scanner<'a> {
     fn is_at_end(&self) -> bool {
         self.source[self.current] == b'\0'
     }
@@ -137,7 +137,7 @@ impl Scanner<'_> {
             }
         }
     }
-    fn string(&'_ mut self) -> Token<'_> {
+    fn string(& mut self) -> Token<'a> {
         while self.peek() != b'"' && !self.is_at_end() {
             if self.peek() == b'\n' {
                 self.line += 1;
@@ -152,7 +152,7 @@ impl Scanner<'_> {
             Token::make_token(self, TokenType::String)
         }
     }
-    fn number(&'_ mut self) -> Token<'_> {
+    fn number(& mut self) -> Token<'a> {
         while is_digit(self.peek()) {
             self.advance();
         }
@@ -165,7 +165,7 @@ impl Scanner<'_> {
         }
         Token::make_token(self, TokenType::Number)
     }
-    fn identifier(&'_ mut self) -> Token<'_> {
+    fn identifier(& mut self) -> Token<'a> {
         //第一个进入的必定不是digit
         while is_alpha(self.peek()) || is_digit(self.peek()) {
             self.advance();

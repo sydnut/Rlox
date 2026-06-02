@@ -1,6 +1,5 @@
 use crate::compiler::scanner::Scanner;
 use std::fmt::{Display, Formatter};
-
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub start: &'a str,
@@ -16,7 +15,7 @@ impl<'a> Token<'a> {
             line,
         }
     }
-    pub fn make_token(sc: &'a Scanner, t: TokenType) -> Self {
+    pub fn make_token(sc: &Scanner<'a>, t: TokenType) -> Self {
         unsafe {
             Self::new(
                 t,
@@ -29,8 +28,16 @@ impl<'a> Token<'a> {
     pub fn error(str: &'_ str, line: i32) -> Token<'_> {
         Token::new(TokenType::Error, str, str.len(), line)
     }
+    pub fn default()-> Self{
+        Self::new(
+            TokenType::Eof,
+            "",
+            0,
+            0
+        )
+    }
 }
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum TokenType {
     // Single-character tokens. 单字符词法
     //(
