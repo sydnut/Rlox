@@ -2,6 +2,7 @@ use crate::bytecode::OpCode::*;
 use crate::chunk::value::Value;
 use crate::chunk::*;
 use crate::compiler::compiler;
+use crate::compiler::compiler::compile;
 
 pub struct VM {
     chunk: Chunk,
@@ -26,11 +27,12 @@ impl VM {
         }
     }
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        let chunk = match compiler::compile(source) {
-            Some(c) => c,
-            None => return InterpretResult::InterpretCompileError,
-        };
-        self.chunk = chunk;
+        match compile(source) { 
+            Some(chunk)=>{
+                self.chunk = chunk;
+            },
+            None=>return InterpretResult::InterpretCompileError,
+        }
         self.ip = 0;
         self.run()
     }
@@ -47,7 +49,6 @@ impl VM {
             self.chunk.disassemble_instruction(self.ip as u32);
             match OpCode::try_from(self.read_byte()).unwrap_or(OpReturn) {
                 OpReturn => {
-                    println!("{}", self.pop());
                     return InterpretResult::InterpretOk;
                 }
                 OpConstant => {
