@@ -53,6 +53,7 @@ impl Chunk {
     pub fn value_array(&self) -> &ValueArray {
         &self.value_array
     }
+    pub fn lines(&self) -> &Lines {&self.lines}
 }
 /**
 below are all dbg fn
@@ -97,6 +98,13 @@ impl Chunk {
             OpCode::OpSub => simple_instruction("OP_SUBTRACT", offset),
             OpCode::OpMul => simple_instruction("OP_MULTI", offset),
             OpCode::OpDiv => simple_instruction("OP_DIV", offset),
+            OpCode::OpNil => simple_instruction("OP_NIL", offset),
+            OpCode::OpTrue => simple_instruction("OP_TRUE", offset),
+            OpCode::OpFalse => simple_instruction("OP_FALSE", offset),
+            OpCode::OpNot => simple_instruction("OP_NOT", offset),
+            OpCode::OpEqual => simple_instruction("OP_EQUAL", offset),
+            OpCode::OpGreater => simple_instruction("OP_GREATER", offset),
+            OpCode::OpLess => simple_instruction("OP_LESS", offset),
             _ => {
                 println!("Unknown opcode {:?}", instruction);
                 offset + 1

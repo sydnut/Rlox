@@ -1,5 +1,6 @@
 use crate::chunk::OpCode::OpReturn;
 use crate::chunk::{Chunk, OpCode};
+use crate::chunk::value::Value::Double;
 use crate::compiler;
 use crate::compiler::scanner::Scanner;
 use crate::compiler::token::{Token, TokenType};
@@ -55,7 +56,7 @@ impl<'a> Parser<'a> {
     }
     // 写入常量
     fn emit_content(&mut self, value: f64) {
-        self.chunk.write_constant(value, self.previous.line as u32)
+        self.chunk.write_constant(Double(value), self.previous.line as u32)
     }
 }
 //Parse 辅助函数

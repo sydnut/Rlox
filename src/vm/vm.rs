@@ -1,3 +1,4 @@
+use std::cmp::{Ordering, PartialOrd};
 use crate::bytecode::OpCode::*;
 use crate::chunk::value::Value;
 use crate::chunk::*;
@@ -53,22 +54,74 @@ impl VM {
                 }
                 OpConstant => {
                     let constant = self.read_constant();
-                    self.push(constant);
+                    self.push(Value::Double(constant));
                     print!(" '{}' \n", constant);
                 }
                 OpConstantLong => {
                     let constant = self.read_constant_long();
-                    self.push(constant);
+                    self.push(Value::Double(constant));
                     print!(" '{}' \n", constant);
                 }
                 OpNegate => {
                     let top = self.top();
-                    *top = -*top;
+                    if let Value::Double(value)=*top{
+                        *top = Value::Double(-value);
+                    }else{
+                        self.runtime_error("Operand must be a number.");
+                    }
                 }
-                OpAdd => self.binary_op(|a, b| a + b),
-                OpSub => self.binary_op(|a, b| a - b),
-                OpMul => self.binary_op(|a, b| a * b),
-                OpDiv => self.binary_op(|a, b| a / b),
+                OpAdd => {
+                    match self.binary_op(|a, b| a + b) {
+                        None=>{},
+                        Some(err)=>return err,
+                    }
+                }
+                OpSub => {
+                    match self.binary_op(|a, b| a - b) {
+                        None=>{},
+                        Some(err)=>return err,
+                    }
+                }
+                OpMul => {
+                    match self.binary_op(|a, b| a * b) {
+                        None=>{},
+                        Some(err)=>return err,
+                    }
+                }
+                OpDiv => {
+                    match self.binary_op(|a, b| a / b) {
+                        None=>{},
+                        Some(err)=>return err,
+                    }
+                }
+                OpNil=>{
+                    self.push(Value::Nil)
+                }
+                OpTrue=>{
+                    self.push(Value::Boolean(true));
+                }
+                OpFalse=>{
+                    self.push(Value::Boolean(false));
+                }
+                OpNot =>{
+                    let top = self.top();
+                    *top = Value::Boolean(!top.is_truthy());
+                }
+                OpEqual =>{
+                    let b = self.pop();
+                    let a = self.top();
+                    *a=Value::Boolean(*a==b);
+                }
+                OpGreater =>{
+                    let b = self.pop();
+                    let a = self.top();
+                    *a=Value::Boolean(*a>b);
+                }
+                OpLess =>{
+                    let b = self.pop();
+                    let a = self.top();
+                    *a=Value::Boolean(*a<b);
+                }
                 _ => {}
             }
         }
@@ -92,10 +145,16 @@ impl VM {
     fn top(&mut self) -> &mut Value {
         &mut self.stack[self.stack_top - 1]
     }
-    fn binary_op(&mut self, op: fn(f64, f64) -> f64) {
+    fn binary_op(&mut self, op: fn(f64, f64) -> f64)->Option<InterpretResult> {
         let b = self.pop();
-        let a = self.top();
-        *a = op(*a, b);
+        let mut a = self.top();
+        if let (Value::Double(va),Value::Double(vb))=(&mut a, b){
+            *a = Value::Double(op(*va, vb));
+            None
+        }else{
+            self.runtime_error("Operands must be a number.");
+            Some(InterpretResult::InterpretRuntimeError)
+        }
     }
 }
 // VM内部读取字节码函数
@@ -108,13 +167,28 @@ impl VM {
     }
     fn read_constant(&mut self) -> f64 {
         let idx = self.read_byte() as usize;
-        self.chunk.value_array().values()[idx]
+        if let Value::Double(value) = self.chunk.value_array().values()[idx]{
+            value
+        }else {
+            panic!("Invalid constant value");
+        }
     }
     fn read_constant_long(&mut self) -> f64 {
         let low = self.read_byte();
         let medium = self.read_byte();
         let high = self.read_byte();
         let idx = ((high as usize) << 16) + ((medium as usize) << 8) + low as usize;
-        self.chunk.value_array().values()[idx]
+        if let Value::Double(value) = self.chunk.value_array().values()[idx]{
+            value
+        }else {
+            panic!("Invalid constant value");
+        }
+    }
+    fn runtime_error(&self, format: &str) {
+        eprintln!("{}", format);
+        let instruction = self.ip -1 ;
+        let line=self.chunk.lines().get_line(instruction as u32).unwrap();
+        eprintln!("[line {}] in script",line)
+        //todo reset the stack
     }
 }
