@@ -1,4 +1,5 @@
 #[repr(u8)]
+#[derive(Copy, Clone)]
 pub enum OpCode {
     OpReturn = 0,
     OpConstant = 1,

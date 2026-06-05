@@ -1,8 +1,6 @@
-use std::cmp::{Ordering, PartialOrd};
 use crate::bytecode::OpCode::*;
 use crate::chunk::value::Value;
 use crate::chunk::*;
-use crate::compiler::compiler;
 use crate::compiler::compiler::compile;
 
 pub struct VM {

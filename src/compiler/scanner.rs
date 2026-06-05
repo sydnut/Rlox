@@ -222,7 +222,7 @@ impl<'a> Scanner<'a> {
         rest: &str,
     ) -> TokenType {
         if self.current - self.start == start + length
-            && self.source[self.start + start..] == *rest.as_bytes()
+            && self.source[self.start + start..self.start + start + length] == *rest.as_bytes()
         {
             token_type
         } else {

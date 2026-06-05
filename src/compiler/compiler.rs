@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
     }
     /// 结束编译器,发送OpReturn字节码
     pub fn end_compiler(&mut self) {
-        self.emit_byte(u8::from(OpReturn));
+        self.emit_byte(OpReturn);
     }
     fn advance(&mut self) -> Token<'a> {
         //not impl `Copy` trait
@@ -51,8 +51,12 @@ impl<'a> Parser<'a> {
         self.error_at_current(message);
     }
     /// 生成字节码
-    fn emit_byte(&mut self, byte: u8) {
-        self.chunk.write_chunk(byte, self.previous.line as u32);
+    fn emit_byte(&mut self, byte: OpCode) {
+        self.chunk.write_chunk(u8::from(byte), self.previous.line as u32);
+    }
+    /// 批量生成字节码
+    fn emit_bytes(&mut self, bytes: &[OpCode]) {
+        bytes.iter().for_each(|byte| self.emit_byte(*byte));
     }
     // 写入常量
     fn emit_content(&mut self, value: f64) {
@@ -96,9 +100,8 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
     parser.advance();
     match parser.previous.token_type {
         TokenType::LeftParen => paren(parser),
-        TokenType::Minus => unary(parser),
-        TokenType::Number => number(parser),
-        //todo 待实现字符串等其他类型
+        TokenType::Minus | TokenType::Bang => unary(parser),
+        TokenType::Number | TokenType::True | TokenType::False | TokenType::Nil => value(parser),
         _ => parser.error("unsupported expression."),
     }
     loop {
@@ -113,11 +116,26 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
         binary_op(parser, rop);
     }
 }
-fn number(parser: &mut Parser) {
-    let value: f64 = parser.previous.start[..parser.previous.length]
-        .parse()
-        .unwrap();
-    parser.emit_content(value);
+fn value(parser: &mut Parser) {
+    match parser.previous.token_type {
+        TokenType::Number =>{
+            let value: f64 = parser.previous.start[..parser.previous.length]
+                .parse()
+                .unwrap();
+            parser.emit_content(value);
+        }
+        TokenType::False=>{
+            parser.emit_byte(OpCode::OpFalse);
+        }
+        TokenType::Nil=>{
+            parser.emit_byte(OpCode::OpNil);
+        }
+        TokenType::True=>{
+            parser.emit_byte(OpCode::OpTrue);
+        }
+        _=>unreachable!()
+    }
+
 }
 fn paren(parser: &mut Parser) {
     parse_expression(parser, 0);
@@ -127,9 +145,10 @@ fn unary(parser: &mut Parser) {
     let op = parser.previous.token_type;
     parse_expression(parser, compiler::token::prefix_binding_power(op));
     match op {
-        TokenType::Minus => parser.emit_byte(u8::from(OpCode::OpNegate)),
+        TokenType::Minus => parser.emit_byte(OpCode::OpNegate),
         //待添加新的前缀运算符
-        _ => todo!(),
+        TokenType::Bang => parser.emit_byte(OpCode::OpNot),
+        _=>unreachable!()
     }
 }
 fn binary_op(parser: &mut Parser, min_op: u8) {
@@ -137,10 +156,16 @@ fn binary_op(parser: &mut Parser, min_op: u8) {
     //先写入右操作数,后序遍历
     parse_expression(parser, min_op);
     match op {
-        TokenType::Plus => parser.emit_byte(u8::from(OpCode::OpAdd)),
-        TokenType::Minus => parser.emit_byte(u8::from(OpCode::OpSub)),
-        TokenType::Star => parser.emit_byte(u8::from(OpCode::OpMul)),
-        TokenType::Slash => parser.emit_byte(u8::from(OpCode::OpDiv)),
+        TokenType::Plus => parser.emit_byte(OpCode::OpAdd),
+        TokenType::Minus => parser.emit_byte(OpCode::OpSub),
+        TokenType::Star => parser.emit_byte(OpCode::OpMul),
+        TokenType::Slash => parser.emit_byte(OpCode::OpDiv),
+        TokenType::EqualEqual => parser.emit_byte(OpCode::OpEqual),
+        TokenType::BangEqual=>parser.emit_bytes(&[OpCode::OpEqual,OpCode::OpNot]),
+        TokenType::Greater => parser.emit_byte(OpCode::OpGreater),
+        TokenType::GreaterEqual => parser.emit_bytes(&[OpCode::OpLess, OpCode::OpNot]),
+        TokenType::Less => parser.emit_byte(OpCode::OpLess),
+        TokenType::LessEqual => parser.emit_bytes(&[OpCode::OpGreater, OpCode::OpNot]),
         _ => unreachable!(),
     }
 }
