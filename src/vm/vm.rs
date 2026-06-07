@@ -142,14 +142,22 @@ impl VM {
                 self.push(Value::Double(a + b));
                 None
             }
-            (Value::Obj(a), Value::Obj(b)) => match (a.as_ref(), b.as_ref()) {
-                (Object::String(a), Object::String(b)) => {
+            (Value::Obj(a), b) => match a.as_ref() {
+                Object::String(a) => {
                     let mut result = a.clone();
-                    result.push_str(b);
+                    result.push_str(&b.string());
                     self.push(Value::Obj(Rc::new(Object::String(result))));
                     None
                 }
-            },
+            }
+            (a,Value::Obj(b)) => match b.as_ref() {
+                Object::String(b) => {
+                    let mut result = a.string();
+                    result.push_str(&b);
+                    self.push(Value::Obj(Rc::new(Object::String(result))));
+                    None
+                }
+            }
             _ => {
                 self.runtime_error("Operands must be two numbers or two strings.");
                 Some(InterpretResult::InterpretRuntimeError)

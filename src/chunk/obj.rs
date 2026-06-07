@@ -21,3 +21,10 @@ impl PartialEq for Object {
         }
     }
 }
+impl Object{
+    pub fn string(&self) -> String {
+        match self {
+            Self::String(s) => s.clone(),
+        }
+    }
+}
