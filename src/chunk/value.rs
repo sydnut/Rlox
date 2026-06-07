@@ -1,14 +1,16 @@
-use std::cmp::Ordering;
+use crate::chunk::obj::Object;
+use std::cmp::{Ordering, PartialEq};
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
-#[derive(Debug,Clone)]
-pub enum Value{
+#[derive(Debug, Clone)]
+pub enum Value {
     Double(f64),
     Boolean(bool),
-    Nil
+    Nil,
+    Obj(Rc<Object>),
 }
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ValueArray {
     values: Vec<Value>,
 }
@@ -34,31 +36,33 @@ impl Display for Value {
         match self {
             Value::Double(v) => write!(f, "Double[{}]", v),
             Value::Boolean(v) => write!(f, "Bool[{}]", v),
-            Value::Nil => write!(f, "Nil")
+            Value::Nil => write!(f, "Nil"),
+            Value::Obj(v) => write!(f, "Obj[{}]", v.as_ref().to_string()),
         }
     }
 }
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
-        match (self,other) {
+        match (self, other) {
             (Value::Nil, Value::Nil) => true,
             (Value::Boolean(v1), Value::Boolean(v2)) => v1 == v2,
             (Value::Double(v1), Value::Double(v2)) => v1 == v2,
-            _ => false
+            (Value::Obj(a), Value::Obj(b)) => a.as_ref() == b.as_ref(),
+            _ => false,
         }
     }
 }
 
 impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self,other) {
+        match (self, other) {
             (Value::Double(v1), Value::Double(v2)) => v1.partial_cmp(v2),
-            _ => None
+            _ => None,
         }
     }
 }
 
-impl Value{
+impl Value {
     /// Value作为条件时是否为真
     /// ___
     /// only 0.0、nil、false为假
@@ -67,7 +71,8 @@ impl Value{
             Value::Double(0f64) => false,
             Value::Double(_) => true,
             Value::Boolean(v) => *v,
-            Value::Nil => false
+            Value::Nil => false,
+            Value::Obj(_) => true,
         }
     }
 }

@@ -14,7 +14,7 @@ impl<'a> Scanner<'a> {
             current: 0,
             line: 1,
             source: source.as_bytes(),
-        } 
+        }
     }
     pub fn scan_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
@@ -137,7 +137,7 @@ impl<'a> Scanner<'a> {
             }
         }
     }
-    fn string(& mut self) -> Token<'a> {
+    fn string(&mut self) -> Token<'a> {
         while self.peek() != b'"' && !self.is_at_end() {
             if self.peek() == b'\n' {
                 self.line += 1;
@@ -152,7 +152,7 @@ impl<'a> Scanner<'a> {
             Token::make_token(self, TokenType::String)
         }
     }
-    fn number(& mut self) -> Token<'a> {
+    fn number(&mut self) -> Token<'a> {
         while is_digit(self.peek()) {
             self.advance();
         }
@@ -165,7 +165,7 @@ impl<'a> Scanner<'a> {
         }
         Token::make_token(self, TokenType::Number)
     }
-    fn identifier(& mut self) -> Token<'a> {
+    fn identifier(&mut self) -> Token<'a> {
         //第一个进入的必定不是digit
         while is_alpha(self.peek()) || is_digit(self.peek()) {
             self.advance();

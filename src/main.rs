@@ -17,7 +17,7 @@ fn main() {
         1 => repl(&mut vm),
         2 => run_file(&mut vm, &args.last().unwrap()),
         _ => {
-            println!("wrong args:{:?}",args);
+            println!("wrong args:{:?}", args);
             eprintln!("Usage: rLox [path]\n");
             exit(64);
         }

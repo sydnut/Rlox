@@ -1,6 +1,6 @@
 use crate::compiler::scanner::Scanner;
 use std::fmt::{Display, Formatter};
-#[derive(Debug,Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub start: &'a str,
@@ -29,13 +29,8 @@ impl<'a> Token<'a> {
     pub fn error(str: &'_ str, line: i32) -> Token<'_> {
         Token::new(TokenType::Error, str, str.len(), line)
     }
-    pub fn default()-> Self{
-        Self::new(
-            TokenType::Eof,
-            "",
-            0,
-            0
-        )
+    pub fn default() -> Self {
+        Self::new(TokenType::Eof, "", 0, 0)
     }
 }
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -110,15 +105,16 @@ impl Display for TokenType {
         write!(f, "{:?}", self)
     }
 }
-pub fn infix_binding_power(token_type: TokenType) -> (u8,u8){
+pub fn infix_binding_power(token_type: TokenType) -> (u8, u8) {
     match token_type {
         // 赋值（右结合）— 后续章节启用
         TokenType::Equal => (2, 1),
         // 相等性
         TokenType::EqualEqual | TokenType::BangEqual => (4, 5),
         // 比较
-        TokenType::Less | TokenType::LessEqual
-        | TokenType::Greater | TokenType::GreaterEqual => (5, 6),
+        TokenType::Less | TokenType::LessEqual | TokenType::Greater | TokenType::GreaterEqual => {
+            (5, 6)
+        }
         // 加减
         TokenType::Plus | TokenType::Minus => (6, 7),
         // 乘除
@@ -127,7 +123,7 @@ pub fn infix_binding_power(token_type: TokenType) -> (u8,u8){
         _ => (0, 0),
     }
 }
-pub fn prefix_binding_power(token_type: TokenType) ->u8{
+pub fn prefix_binding_power(token_type: TokenType) -> u8 {
     match token_type {
         //右binding power最大,使-1+2 => -1 +2 not -(1+2)
         TokenType::Minus => 8, // 一元取负

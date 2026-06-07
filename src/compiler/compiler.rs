@@ -1,9 +1,11 @@
 use crate::chunk::OpCode::OpReturn;
+use crate::chunk::obj::Object;
+use crate::chunk::value::Value;
 use crate::chunk::{Chunk, OpCode};
-use crate::chunk::value::Value::Double;
 use crate::compiler;
 use crate::compiler::scanner::Scanner;
 use crate::compiler::token::{Token, TokenType};
+use std::rc::Rc;
 struct Parser<'a> {
     current: Token<'a>,
     previous: Token<'a>,
@@ -52,15 +54,23 @@ impl<'a> Parser<'a> {
     }
     /// 生成字节码
     fn emit_byte(&mut self, byte: OpCode) {
-        self.chunk.write_chunk(u8::from(byte), self.previous.line as u32);
+        self.chunk
+            .write_chunk(u8::from(byte), self.previous.line as u32);
     }
     /// 批量生成字节码
     fn emit_bytes(&mut self, bytes: &[OpCode]) {
         bytes.iter().for_each(|byte| self.emit_byte(*byte));
     }
     // 写入常量
-    fn emit_content(&mut self, value: f64) {
-        self.chunk.write_constant(Double(value), self.previous.line as u32)
+    fn emit_content_number(&mut self, value: f64) {
+        self.chunk
+            .write_constant(Value::Double(value), self.previous.line as u32)
+    }
+    fn emit_content_str(&mut self, value: &str) {
+        self.chunk.write_constant(
+            Value::Obj(Rc::new(Object::String(String::from(value)))),
+            self.previous.line as u32,
+        )
     }
 }
 //Parse 辅助函数
@@ -101,7 +111,11 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
     match parser.previous.token_type {
         TokenType::LeftParen => paren(parser),
         TokenType::Minus | TokenType::Bang => unary(parser),
-        TokenType::Number | TokenType::True | TokenType::False | TokenType::Nil => value(parser),
+        TokenType::Number
+        | TokenType::True
+        | TokenType::False
+        | TokenType::Nil
+        | TokenType::String => value(parser),
         _ => parser.error("unsupported expression."),
     }
     loop {
@@ -118,24 +132,28 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
 }
 fn value(parser: &mut Parser) {
     match parser.previous.token_type {
-        TokenType::Number =>{
+        TokenType::Number => {
             let value: f64 = parser.previous.start[..parser.previous.length]
                 .parse()
                 .unwrap();
-            parser.emit_content(value);
+            parser.emit_content_number(value);
         }
-        TokenType::False=>{
+        TokenType::False => {
             parser.emit_byte(OpCode::OpFalse);
         }
-        TokenType::Nil=>{
+        TokenType::Nil => {
             parser.emit_byte(OpCode::OpNil);
         }
-        TokenType::True=>{
+        TokenType::True => {
             parser.emit_byte(OpCode::OpTrue);
         }
-        _=>unreachable!()
+        TokenType::String => {
+            //scanner没有提取出b'"',这里需要去除
+            let str = &parser.previous.start[1..parser.previous.length-1];
+            parser.emit_content_str(str);
+        }
+        _ => unreachable!(),
     }
-
 }
 fn paren(parser: &mut Parser) {
     parse_expression(parser, 0);
@@ -148,7 +166,7 @@ fn unary(parser: &mut Parser) {
         TokenType::Minus => parser.emit_byte(OpCode::OpNegate),
         //待添加新的前缀运算符
         TokenType::Bang => parser.emit_byte(OpCode::OpNot),
-        _=>unreachable!()
+        _ => unreachable!(),
     }
 }
 fn binary_op(parser: &mut Parser, min_op: u8) {
@@ -161,7 +179,7 @@ fn binary_op(parser: &mut Parser, min_op: u8) {
         TokenType::Star => parser.emit_byte(OpCode::OpMul),
         TokenType::Slash => parser.emit_byte(OpCode::OpDiv),
         TokenType::EqualEqual => parser.emit_byte(OpCode::OpEqual),
-        TokenType::BangEqual=>parser.emit_bytes(&[OpCode::OpEqual,OpCode::OpNot]),
+        TokenType::BangEqual => parser.emit_bytes(&[OpCode::OpEqual, OpCode::OpNot]),
         TokenType::Greater => parser.emit_byte(OpCode::OpGreater),
         TokenType::GreaterEqual => parser.emit_bytes(&[OpCode::OpLess, OpCode::OpNot]),
         TokenType::Less => parser.emit_byte(OpCode::OpLess),

@@ -2,7 +2,7 @@ use super::line::*;
 use super::value::*;
 use crate::chunk::OpCode;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Chunk {
     //uint8* code
     pub code: Vec<u8>,
@@ -53,7 +53,9 @@ impl Chunk {
     pub fn value_array(&self) -> &ValueArray {
         &self.value_array
     }
-    pub fn lines(&self) -> &Lines {&self.lines}
+    pub fn lines(&self) -> &Lines {
+        &self.lines
+    }
 }
 /**
 below are all dbg fn
