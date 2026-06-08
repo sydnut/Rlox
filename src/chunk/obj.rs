@@ -14,13 +14,6 @@ impl Display for Object {
     }
 }
 
-impl PartialEq for Object {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Object::String(s1), Object::String(s2)) => s1 == s2,
-        }
-    }
-}
 impl Object{
     pub fn string(&self) -> String {
         match self {

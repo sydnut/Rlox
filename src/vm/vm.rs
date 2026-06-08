@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::bytecode::OpCode::*;
 use crate::chunk::obj::Object;
 use crate::chunk::value::Value;
@@ -11,6 +12,7 @@ pub struct VM {
     ip: usize,
     stack: Vec<Value>,
     stack_top: usize,
+    table:HashMap<String, Rc<Object>>,
 }
 const STACK_MAX: usize = 1024;
 pub enum InterpretResult {
@@ -25,10 +27,11 @@ impl VM {
             ip: 0,
             stack: Vec::with_capacity(STACK_MAX),
             stack_top: 0,
+            table: HashMap::new(),
         }
     }
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        match compile(source) {
+        match compile(source, &mut self.table) {
             Some(chunk) => {
                 self.chunk = chunk;
             }
@@ -146,7 +149,15 @@ impl VM {
                 Object::String(a) => {
                     let mut result = a.clone();
                     result.push_str(&b.string());
-                    self.push(Value::Obj(Rc::new(Object::String(result))));
+                    //查常量表
+                    let result=if let Some(rc)=self.table.get(&result) {
+                        rc.clone()
+                    }else{
+                        let rc=Rc::new(Object::String(result.to_string()));
+                        self.table.insert(result, rc.clone());
+                        rc
+                    };
+                    self.push(Value::Obj(result));
                     None
                 }
             }
@@ -154,7 +165,15 @@ impl VM {
                 Object::String(b) => {
                     let mut result = a.string();
                     result.push_str(&b);
-                    self.push(Value::Obj(Rc::new(Object::String(result))));
+                    //查常量表
+                    let result=if let Some(rc)=self.table.get(&result) {
+                        rc.clone()
+                    }else{
+                        let rc=Rc::new(Object::String(result.to_string()));
+                        self.table.insert(result, rc.clone());
+                        rc
+                    };
+                    self.push(Value::Obj(result));
                     None
                 }
             }

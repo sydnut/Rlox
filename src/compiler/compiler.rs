@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::chunk::OpCode::OpReturn;
 use crate::chunk::obj::Object;
 use crate::chunk::value::Value;
@@ -13,9 +14,11 @@ struct Parser<'a> {
     chunk: Chunk,
     pub had_error: bool,
     pub panic_mode: bool,
+    //驻留表
+    table:&'a mut HashMap<String,Rc<Object>>
 }
 impl<'a> Parser<'a> {
-    pub fn new(scanner: Scanner<'a>) -> Self {
+    pub fn new(scanner: Scanner<'a>,table:&'a mut HashMap<String,Rc<Object>>) -> Self {
         Self {
             current: Token::default(),
             previous: Token::default(),
@@ -23,6 +26,7 @@ impl<'a> Parser<'a> {
             chunk: Chunk::new(),
             had_error: false,
             panic_mode: false,
+            table
         }
     }
     /// 结束编译器,发送OpReturn字节码
@@ -67,8 +71,10 @@ impl<'a> Parser<'a> {
             .write_constant(Value::Double(value), self.previous.line as u32)
     }
     fn emit_content_str(&mut self, value: &str) {
+        //查常量表，查不到新增，查到复用
+        let str = self.table.entry(String::from(value)).or_insert(Rc::new(Object::String(String::from(value))));
         self.chunk.write_constant(
-            Value::Obj(Rc::new(Object::String(String::from(value)))),
+            Value::Obj(Rc::clone(str)),
             self.previous.line as u32,
         )
     }
@@ -188,8 +194,8 @@ fn binary_op(parser: &mut Parser, min_op: u8) {
     }
 }
 // 以下为语法分析函数
-pub fn compile(source: &str) -> Option<Chunk> {
-    let mut parser = Parser::new(Scanner::new(source));
+pub fn compile(source: &str,table:&mut HashMap<String,Rc<Object>>) -> Option<Chunk> {
+    let mut parser = Parser::new(Scanner::new(source),table);
     parser.advance(); //reset the `current` -> Token#1
     expression(&mut parser);
     parser.consume(TokenType::Eof, "Expect end of expression.");

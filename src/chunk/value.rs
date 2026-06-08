@@ -47,7 +47,7 @@ impl PartialEq for Value {
             (Value::Nil, Value::Nil) => true,
             (Value::Boolean(v1), Value::Boolean(v2)) => v1 == v2,
             (Value::Double(v1), Value::Double(v2)) => v1 == v2,
-            (Value::Obj(a), Value::Obj(b)) => a.as_ref() == b.as_ref(),
+            (Value::Obj(a), Value::Obj(b)) => Rc::ptr_eq(a, b),
             _ => false,
         }
     }
