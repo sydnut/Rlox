@@ -42,27 +42,31 @@ impl VM {
     }
 
     fn run(&mut self) -> InterpretResult {
+        let is_dbg = std::env::var("DEBUG").unwrap_or(String::from("")).len() > 0;
         loop {
-            print!("\t\t");
-            for x in &self.stack {
-                print!("[");
-                print!("'{}'", x);
-                print!("]");
+            //增加debug查看堆栈支持
+            if is_dbg {
+                print!("\t\t");
+                for x in &self.stack {
+                    print!("[");
+                    print!("'{}'", x);
+                    print!("]");
+                }
+                println!();
+                self.chunk.disassemble_instruction(self.ip as u32);
             }
-            println!();
-            self.chunk.disassemble_instruction(self.ip as u32);
             match OpCode::try_from(self.read_byte()).unwrap_or(OpReturn) {
                 OpReturn => {
                     return InterpretResult::InterpretOk;
                 }
                 OpConstant => {
                     let constant = self.read_constant();
-                    print!(" '{}' \n", constant);
+                    if is_dbg{print!(" '{}' \n", constant);}
                     self.push(constant);
                 }
                 OpConstantLong => {
                     let constant = self.read_constant_long();
-                    print!(" '{}' \n", constant);
+                    if is_dbg{print!(" '{}' \n", constant);}
                     self.push(constant);
                 }
                 OpNegate => {
@@ -114,6 +118,12 @@ impl VM {
                     let b = self.pop();
                     let a = self.top();
                     *a = Value::Boolean(*a < b);
+                }
+                OpPrint=>{
+                    println!("{}",self.pop().string())
+                }
+                OpPop => {
+                    self.pop();
                 }
             }
         }

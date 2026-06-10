@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::chunk::OpCode::OpReturn;
 use crate::chunk::obj::Object;
 use crate::chunk::value::Value;
@@ -6,6 +5,7 @@ use crate::chunk::{Chunk, OpCode};
 use crate::compiler;
 use crate::compiler::scanner::Scanner;
 use crate::compiler::token::{Token, TokenType};
+use std::collections::HashMap;
 use std::rc::Rc;
 struct Parser<'a> {
     current: Token<'a>,
@@ -15,10 +15,10 @@ struct Parser<'a> {
     pub had_error: bool,
     pub panic_mode: bool,
     //驻留表
-    table:&'a mut HashMap<String,Rc<Object>>
+    table: &'a mut HashMap<String, Rc<Object>>,
 }
 impl<'a> Parser<'a> {
-    pub fn new(scanner: Scanner<'a>,table:&'a mut HashMap<String,Rc<Object>>) -> Self {
+    pub fn new(scanner: Scanner<'a>, table: &'a mut HashMap<String, Rc<Object>>) -> Self {
         Self {
             current: Token::default(),
             previous: Token::default(),
@@ -26,7 +26,7 @@ impl<'a> Parser<'a> {
             chunk: Chunk::new(),
             had_error: false,
             panic_mode: false,
-            table
+            table,
         }
     }
     /// 结束编译器,发送OpReturn字节码
@@ -56,6 +56,19 @@ impl<'a> Parser<'a> {
         }
         self.error_at_current(message);
     }
+    /// 匹配成功则消耗一个Token
+    fn match_token(&mut self, token_type: TokenType) -> bool {
+        if self.check(token_type) {
+            self.advance();
+            true
+        } else {
+            false
+        }
+    }
+    /// current的Type是否是传入参数
+    fn check(&self, token_type: TokenType) -> bool {
+        self.current.token_type == token_type
+    }
     /// 生成字节码
     fn emit_byte(&mut self, byte: OpCode) {
         self.chunk
@@ -72,17 +85,18 @@ impl<'a> Parser<'a> {
     }
     fn emit_content_str(&mut self, value: &str) {
         //查常量表，查不到新增，查到复用
-        let str = self.table.entry(String::from(value)).or_insert(Rc::new(Object::String(String::from(value))));
-        self.chunk.write_constant(
-            Value::Obj(Rc::clone(str)),
-            self.previous.line as u32,
-        )
+        let str = self
+            .table
+            .entry(String::from(value))
+            .or_insert(Rc::new(Object::String(String::from(value))));
+        self.chunk
+            .write_constant(Value::Obj(Rc::clone(str)), self.previous.line as u32)
     }
 }
 //Parse 辅助函数
 impl Parser<'_> {
     fn error_at_current(&mut self, message: &str) {
-        if !self.panic_mode {
+        if self.panic_mode {
             return;
         }
         self.panic_mode = true;
@@ -90,7 +104,7 @@ impl Parser<'_> {
         self.had_error = true;
     }
     fn error(&mut self, message: &str) {
-        if !self.panic_mode {
+        if self.panic_mode {
             return;
         }
         self.panic_mode = true;
@@ -106,10 +120,28 @@ impl Parser<'_> {
         }
         eprintln!(": {}", message);
     }
-}
-/// 表达式解析驱动函数
-fn expression(parser: &mut Parser) {
-    parse_expression(parser, 0);
+    fn synchronize(&mut self) {
+        self.panic_mode = false;
+        while self.current.token_type != TokenType::Eof {
+            //步过;
+            if self.previous.token_type == TokenType::Semicolon {
+                return;
+            }
+            match self.current.token_type {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {
+                    self.advance();
+                }
+            }
+        }
+    }
 }
 fn parse_expression(parser: &mut Parser, min_bp: u8) {
     //移动一格,使previous有值
@@ -155,7 +187,7 @@ fn value(parser: &mut Parser) {
         }
         TokenType::String => {
             //scanner没有提取出b'"',这里需要去除
-            let str = &parser.previous.start[1..parser.previous.length-1];
+            let str = &parser.previous.start[1..parser.previous.length - 1];
             parser.emit_content_str(str);
         }
         _ => unreachable!(),
@@ -193,12 +225,57 @@ fn binary_op(parser: &mut Parser, min_op: u8) {
         _ => unreachable!(),
     }
 }
+/// 表达式解析驱动函数
+fn expression(parser: &mut Parser) {
+    parse_expression(parser, 0);
+}
+fn var_declaration(parser: &mut Parser) {
+    let global = parser.parse_variable("Expect variable name.");
+    if parser.match_token(TokenType::Equal){
+        //赋值
+        expression(parser);
+    }else{
+        //隐式初始化为nil
+        parser.emit_byte(OpCode::OpNil);
+    }
+    parser.consume(TokenType::Semicolon, "Expect ';' after variable declaration.");
+    parser.define_variable(global);
+}
+fn expression_statement(parser: &mut Parser) {
+    expression(parser);
+    parser.consume(TokenType::Semicolon, "Expect ';' after expression.");
+    parser.emit_byte(OpCode::OpPop)
+}
+fn print_statement(parser: &mut Parser) {
+    expression(parser);
+    parser.consume(TokenType::Semicolon, "Expect ';' after value.");
+    parser.emit_byte(OpCode::OpPrint);
+}
+fn declaration(parser: &mut Parser) {
+    if parser.match_token(TokenType::Var) {
+        var_declaration(parser);
+    } else {
+        statement(parser);
+    }
+    if parser.panic_mode {
+        //恐慌模式后,进行同步
+        parser.synchronize()
+    }
+}
+fn statement(parser: &mut Parser) {
+    if parser.match_token(TokenType::Print) {
+        print_statement(parser);
+    } else {
+        expression_statement(parser);
+    }
+}
 // 以下为语法分析函数
-pub fn compile(source: &str,table:&mut HashMap<String,Rc<Object>>) -> Option<Chunk> {
-    let mut parser = Parser::new(Scanner::new(source),table);
+pub fn compile(source: &str, table: &mut HashMap<String, Rc<Object>>) -> Option<Chunk> {
+    let mut parser = Parser::new(Scanner::new(source), table);
     parser.advance(); //reset the `current` -> Token#1
-    expression(&mut parser);
-    parser.consume(TokenType::Eof, "Expect end of expression.");
+    while !parser.match_token(TokenType::Eof) {
+        declaration(&mut parser);
+    }
     parser.end_compiler();
     if !parser.had_error {
         Some(parser.chunk)

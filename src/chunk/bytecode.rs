@@ -16,6 +16,8 @@ pub enum OpCode {
     OpEqual = 12,
     OpGreater = 13,
     OpLess = 14,
+    OpPrint = 15,
+    OpPop = 16,
 }
 
 impl From<OpCode> for u8 {
@@ -36,6 +38,9 @@ impl From<OpCode> for u8 {
             OpCode::OpEqual => 12,
             OpCode::OpGreater => 13,
             OpCode::OpLess => 14,
+            OpCode::OpPrint => 15,
+            OpCode::OpPop => 16,
+            
         }
     }
 }
@@ -60,6 +65,8 @@ impl TryFrom<u8> for OpCode {
             12 => Ok(OpCode::OpEqual),
             13 => Ok(OpCode::OpGreater),
             14 => Ok(OpCode::OpLess),
+            15 => Ok(OpCode::OpPrint),
+            16 => Ok(OpCode::OpPop),
             _ => Err(format!("Unknown opcode: {}", value)),
         }
     }

@@ -107,6 +107,8 @@ impl Chunk {
             OpCode::OpEqual => simple_instruction("OP_EQUAL", offset),
             OpCode::OpGreater => simple_instruction("OP_GREATER", offset),
             OpCode::OpLess => simple_instruction("OP_LESS", offset),
+            OpCode::OpPrint => simple_instruction("OP_PRINT", offset),
+            OpCode::OpPop => simple_instruction("OP_POP", offset),
             _ => {
                 println!("Unknown opcode {:?}", instruction);
                 offset + 1
