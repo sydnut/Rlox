@@ -13,6 +13,7 @@ pub struct VM {
     stack: Vec<Value>,
     stack_top: usize,
     table:HashMap<String, Rc<Object>>,
+    globals:HashMap<String, Value>,
 }
 const STACK_MAX: usize = 1024;
 pub enum InterpretResult {
@@ -28,6 +29,7 @@ impl VM {
             stack: Vec::with_capacity(STACK_MAX),
             stack_top: 0,
             table: HashMap::new(),
+            globals: HashMap::new(),
         }
     }
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
@@ -125,6 +127,72 @@ impl VM {
                 OpPop => {
                     self.pop();
                 }
+                OpDefineGlobal => {
+                    let name_val = self.read_constant();
+                    let value = self.pop();
+                    if let Value::Obj(name) = name_val {
+                        if let Object::String(name) = name.as_ref() {
+                            self.write_globals(name, value);
+                        }
+                    }
+                }
+                OpDefineGlobalLong => {
+                    let name_val = self.read_constant_long();
+                    let value = self.pop();
+                    if let Value::Obj(name) = name_val {
+                        if let Object::String(name) = name.as_ref() {
+                            self.write_globals(name, value);
+                        }
+                    }
+                }
+                OpGetGlobal => {
+                    if let Value::Obj(name)=self.read_constant(){
+                        if let Object::String(name)=name.as_ref(){
+                            if let Some(value)=self.globals.get(name){
+                                self.push(value.clone());
+                            }else{
+                                self.runtime_error(&format!("undefined variable:{}",name));
+                            }
+                        }
+                    }
+                }
+                OpGetGlobalLong => {
+                    if let Value::Obj(name)=self.read_constant_long(){
+                        if let Object::String(name)=name.as_ref(){
+                            if let Some(value)=self.globals.get(name){
+                                self.push(value.clone());
+                            }else{
+                                self.runtime_error(&format!("undefined variable:{}",name));
+                            }
+                        }
+                    }
+                }
+                OpSetGlobal => {
+                    let name_val = self.read_constant();
+                    if let Value::Obj(name) = name_val {
+                        if let Object::String(name) = name.as_ref() {
+                            let new_value = self.top().clone();
+                            if let Some(value) = self.globals.get_mut(name) {
+                                *value = new_value;
+                            } else {
+                                self.runtime_error(&format!("undefined variable: {}", name));
+                                return InterpretResult::InterpretRuntimeError;
+                            }
+                        }
+                    }
+                }
+                OpSetGlobalLong => {
+                    if let Value::Obj(name)=self.read_constant_long(){
+                        if let Object::String(name)=name.as_ref(){
+                            let new_value=self.top().clone();
+                            if let Some(value)=self.globals.get_mut(name){
+                                *value=new_value
+                            }else{
+                                self.runtime_error(&format!("undefined variable:{}",name));
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -203,6 +271,12 @@ impl VM {
             self.runtime_error("Operands must be a number.");
             Some(InterpretResult::InterpretRuntimeError)
         }
+    }
+}
+// VM全局表相关
+impl VM{
+    fn write_globals(&mut self,name:&str,value: Value) {
+        self.globals.insert(name.to_string(), value);
     }
 }
 // VM内部读取字节码函数

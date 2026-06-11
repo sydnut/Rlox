@@ -18,6 +18,12 @@ pub enum OpCode {
     OpLess = 14,
     OpPrint = 15,
     OpPop = 16,
+    OpDefineGlobal = 17,
+    OpGetGlobal = 18,
+    OpSetGlobal = 19,
+    OpDefineGlobalLong = 20,
+    OpGetGlobalLong = 21,
+    OpSetGlobalLong = 22,
 }
 
 impl From<OpCode> for u8 {
@@ -40,7 +46,12 @@ impl From<OpCode> for u8 {
             OpCode::OpLess => 14,
             OpCode::OpPrint => 15,
             OpCode::OpPop => 16,
-            
+            OpCode::OpDefineGlobal => 17,
+            OpCode::OpGetGlobal => 18,
+            OpCode::OpSetGlobal => 19,
+            OpCode::OpDefineGlobalLong => 20,
+            OpCode::OpGetGlobalLong => 21,
+            OpCode::OpSetGlobalLong => 22,
         }
     }
 }
@@ -67,6 +78,12 @@ impl TryFrom<u8> for OpCode {
             14 => Ok(OpCode::OpLess),
             15 => Ok(OpCode::OpPrint),
             16 => Ok(OpCode::OpPop),
+            17 => Ok(OpCode::OpDefineGlobal),
+            18 => Ok(OpCode::OpGetGlobal),
+            19 => Ok(OpCode::OpSetGlobal),
+            20 => Ok(OpCode::OpDefineGlobalLong),
+            21 => Ok(OpCode::OpGetGlobalLong),
+            22 => Ok(OpCode::OpSetGlobalLong),
             _ => Err(format!("Unknown opcode: {}", value)),
         }
     }

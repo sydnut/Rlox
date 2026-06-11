@@ -107,8 +107,6 @@ impl Display for TokenType {
 }
 pub fn infix_binding_power(token_type: TokenType) -> (u8, u8) {
     match token_type {
-        // 赋值（右结合）— 后续章节启用
-        TokenType::Equal => (2, 1),
         // 相等性
         TokenType::EqualEqual | TokenType::BangEqual => (4, 5),
         // 比较

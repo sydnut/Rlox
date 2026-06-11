@@ -81,7 +81,7 @@ impl<'a> Parser<'a> {
     // 写入常量
     fn emit_content_number(&mut self, value: f64) {
         self.chunk
-            .write_constant(Value::Double(value), self.previous.line as u32)
+            .write_constant(Value::Double(value), self.previous.line as u32);
     }
     fn emit_content_str(&mut self, value: &str) {
         //查常量表，查不到新增，查到复用
@@ -90,11 +90,30 @@ impl<'a> Parser<'a> {
             .entry(String::from(value))
             .or_insert(Rc::new(Object::String(String::from(value))));
         self.chunk
-            .write_constant(Value::Obj(Rc::clone(str)), self.previous.line as u32)
+            .write_constant(Value::Obj(Rc::clone(str)), self.previous.line as u32);
     }
 }
 //Parse 辅助函数
 impl Parser<'_> {
+    fn parse_variable(&mut self, error_msg: &str) -> usize {
+        self.consume(TokenType::Identifier, error_msg);
+        // 把变量名写入常量池，返回索引
+        let name = &self.previous.start[..self.previous.length];
+        let obj = self
+            .table
+            .entry(String::from(name))
+            .or_insert(Rc::new(Object::String(String::from(name))));
+        self.chunk.add_constant(Value::Obj(Rc::clone(obj)))
+    }
+    fn define_variable(&mut self, global: usize) {
+        let line = self.previous.line as u32;
+        self.chunk.write_global_op(
+            OpCode::OpDefineGlobal,
+            OpCode::OpDefineGlobalLong,
+            global,
+            line,
+        );
+    }
     fn error_at_current(&mut self, message: &str) {
         if self.panic_mode {
             return;
@@ -154,6 +173,7 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
         | TokenType::False
         | TokenType::Nil
         | TokenType::String => value(parser),
+        TokenType::Identifier => identifier(parser, min_bp),
         _ => parser.error("unsupported expression."),
     }
     loop {
@@ -166,6 +186,9 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
         parser.advance();
         //将中缀运算符写入chunk
         binary_op(parser, rop);
+    }
+    if min_bp==0 && parser.match_token(TokenType::Equal){
+        parser.error("Invalid assignment target.");
     }
 }
 fn value(parser: &mut Parser) {
@@ -191,6 +214,34 @@ fn value(parser: &mut Parser) {
             parser.emit_content_str(str);
         }
         _ => unreachable!(),
+    }
+}
+fn identifier(parser: &mut Parser, min_bp: u8) {
+    let name = &parser.previous.start[..parser.previous.length];
+    let obj = parser
+        .table
+        .entry(String::from(name))
+        .or_insert(Rc::new(Object::String(String::from(name))));
+    let idx = parser.chunk.add_constant(Value::Obj(Rc::clone(obj)));
+    let line = parser.previous.line as u32;
+
+    if min_bp == 0 && parser.match_token(TokenType::Equal) {
+        // 赋值：编译右值，emit OpSetGlobal
+        expression(parser);
+        parser.chunk.write_global_op(
+            OpCode::OpSetGlobal,
+            OpCode::OpSetGlobalLong,
+            idx,
+            line,
+        );
+    } else {
+        // 读变量：emit OpGetGlobal
+        parser.chunk.write_global_op(
+            OpCode::OpGetGlobal,
+            OpCode::OpGetGlobalLong,
+            idx,
+            line,
+        );
     }
 }
 fn paren(parser: &mut Parser) {

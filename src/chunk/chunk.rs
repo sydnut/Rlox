@@ -28,7 +28,7 @@ impl Chunk {
         self.lines.add_line(line);
         self.capacity = self.code.capacity() as u32;
     }
-    pub fn write_constant(&mut self, value: Value, line: u32) {
+    pub fn write_constant(&mut self, value: Value, line: u32)->usize{
         const ONE_MAX: usize = u8::MAX as usize;
         if self.value_array.count() >= ONE_MAX {
             self.code.push(OpCode::OpConstantLong as u8);
@@ -48,6 +48,24 @@ impl Chunk {
         }
         self.lines.add_line(line);
         self.capacity = self.code.capacity() as u32;
+        self.code.len()-1
+    }
+    /// 只写入常量池，返回索引，不emit OpCode
+    pub fn add_constant(&mut self, value: Value) -> usize {
+        self.value_array.write_value(value);
+        self.value_array.count() - 1
+    }
+    /// 根据索引大小emit短/长全局变量指令
+    pub fn write_global_op(&mut self, short_op: OpCode, long_op: OpCode, idx: usize, line: u32) {
+        if idx <= u8::MAX as usize {
+            self.write_chunk(u8::from(short_op), line);
+            self.write_chunk(idx as u8, line);
+        } else {
+            self.write_chunk(u8::from(long_op), line);
+            self.write_chunk((idx & 0xFF) as u8, line);
+            self.write_chunk(((idx >> 8) & 0xFF) as u8, line);
+            self.write_chunk(((idx >> 16) & 0xFF) as u8, line);
+        }
     }
 
     pub fn value_array(&self) -> &ValueArray {
@@ -109,6 +127,12 @@ impl Chunk {
             OpCode::OpLess => simple_instruction("OP_LESS", offset),
             OpCode::OpPrint => simple_instruction("OP_PRINT", offset),
             OpCode::OpPop => simple_instruction("OP_POP", offset),
+            OpCode::OpDefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
+            OpCode::OpGetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset),
+            OpCode::OpSetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset),
+            OpCode::OpDefineGlobalLong => self.constant_long_instruction("OP_DEFINE_GLOBAL_LONG", offset),
+            OpCode::OpGetGlobalLong => self.constant_long_instruction("OP_GET_GLOBAL_LONG", offset),
+            OpCode::OpSetGlobalLong => self.constant_long_instruction("OP_SET_GLOBAL_LONG", offset),
             _ => {
                 println!("Unknown opcode {:?}", instruction);
                 offset + 1
