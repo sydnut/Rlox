@@ -28,7 +28,7 @@ impl Chunk {
         self.lines.add_line(line);
         self.capacity = self.code.capacity() as u32;
     }
-    pub fn write_constant(&mut self, value: Value, line: u32)->usize{
+    pub fn write_constant(&mut self, value: Value, line: u32) -> usize {
         const ONE_MAX: usize = u8::MAX as usize;
         if self.value_array.count() >= ONE_MAX {
             self.code.push(OpCode::OpConstantLong as u8);
@@ -48,7 +48,7 @@ impl Chunk {
         }
         self.lines.add_line(line);
         self.capacity = self.code.capacity() as u32;
-        self.code.len()-1
+        self.code.len() - 1
     }
     /// 只写入常量池，返回索引，不emit OpCode
     pub fn add_constant(&mut self, value: Value) -> usize {
@@ -130,7 +130,9 @@ impl Chunk {
             OpCode::OpDefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
             OpCode::OpGetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset),
             OpCode::OpSetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset),
-            OpCode::OpDefineGlobalLong => self.constant_long_instruction("OP_DEFINE_GLOBAL_LONG", offset),
+            OpCode::OpDefineGlobalLong => {
+                self.constant_long_instruction("OP_DEFINE_GLOBAL_LONG", offset)
+            }
             OpCode::OpGetGlobalLong => self.constant_long_instruction("OP_GET_GLOBAL_LONG", offset),
             OpCode::OpSetGlobalLong => self.constant_long_instruction("OP_SET_GLOBAL_LONG", offset),
             _ => {

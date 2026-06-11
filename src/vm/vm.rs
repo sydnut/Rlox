@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use crate::bytecode::OpCode::*;
 use crate::chunk::obj::Object;
 use crate::chunk::value::Value;
 use crate::chunk::*;
 use crate::compiler::compiler::compile;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct VM {
@@ -12,8 +12,8 @@ pub struct VM {
     ip: usize,
     stack: Vec<Value>,
     stack_top: usize,
-    table:HashMap<String, Rc<Object>>,
-    globals:HashMap<String, Value>,
+    table: HashMap<String, Rc<Object>>,
+    globals: HashMap<String, Value>,
 }
 const STACK_MAX: usize = 1024;
 pub enum InterpretResult {
@@ -63,12 +63,16 @@ impl VM {
                 }
                 OpConstant => {
                     let constant = self.read_constant();
-                    if is_dbg{print!(" '{}' \n", constant);}
+                    if is_dbg {
+                        print!(" '{}' \n", constant);
+                    }
                     self.push(constant);
                 }
                 OpConstantLong => {
                     let constant = self.read_constant_long();
-                    if is_dbg{print!(" '{}' \n", constant);}
+                    if is_dbg {
+                        print!(" '{}' \n", constant);
+                    }
                     self.push(constant);
                 }
                 OpNegate => {
@@ -121,8 +125,12 @@ impl VM {
                     let a = self.top();
                     *a = Value::Boolean(*a < b);
                 }
-                OpPrint=>{
-                    println!("{}",self.pop().string())
+                OpPrint => {
+                    if self.stack.len() == 0 {
+                        self.runtime_error("Unterminated print.");
+                    } else {
+                        println!("{}", self.pop().string())
+                    }
                 }
                 OpPop => {
                     self.pop();
@@ -146,23 +154,23 @@ impl VM {
                     }
                 }
                 OpGetGlobal => {
-                    if let Value::Obj(name)=self.read_constant(){
-                        if let Object::String(name)=name.as_ref(){
-                            if let Some(value)=self.globals.get(name){
+                    if let Value::Obj(name) = self.read_constant() {
+                        if let Object::String(name) = name.as_ref() {
+                            if let Some(value) = self.globals.get(name) {
                                 self.push(value.clone());
-                            }else{
-                                self.runtime_error(&format!("undefined variable:{}",name));
+                            } else {
+                                self.runtime_error(&format!("undefined variable:{}", name));
                             }
                         }
                     }
                 }
                 OpGetGlobalLong => {
-                    if let Value::Obj(name)=self.read_constant_long(){
-                        if let Object::String(name)=name.as_ref(){
-                            if let Some(value)=self.globals.get(name){
+                    if let Value::Obj(name) = self.read_constant_long() {
+                        if let Object::String(name) = name.as_ref() {
+                            if let Some(value) = self.globals.get(name) {
                                 self.push(value.clone());
-                            }else{
-                                self.runtime_error(&format!("undefined variable:{}",name));
+                            } else {
+                                self.runtime_error(&format!("undefined variable:{}", name));
                             }
                         }
                     }
@@ -182,13 +190,13 @@ impl VM {
                     }
                 }
                 OpSetGlobalLong => {
-                    if let Value::Obj(name)=self.read_constant_long(){
-                        if let Object::String(name)=name.as_ref(){
-                            let new_value=self.top().clone();
-                            if let Some(value)=self.globals.get_mut(name){
-                                *value=new_value
-                            }else{
-                                self.runtime_error(&format!("undefined variable:{}",name));
+                    if let Value::Obj(name) = self.read_constant_long() {
+                        if let Object::String(name) = name.as_ref() {
+                            let new_value = self.top().clone();
+                            if let Some(value) = self.globals.get_mut(name) {
+                                *value = new_value
+                            } else {
+                                self.runtime_error(&format!("undefined variable:{}", name));
                             }
                         }
                     }
@@ -228,33 +236,33 @@ impl VM {
                     let mut result = a.clone();
                     result.push_str(&b.string());
                     //查常量表
-                    let result=if let Some(rc)=self.table.get(&result) {
+                    let result = if let Some(rc) = self.table.get(&result) {
                         rc.clone()
-                    }else{
-                        let rc=Rc::new(Object::String(result.to_string()));
+                    } else {
+                        let rc = Rc::new(Object::String(result.to_string()));
                         self.table.insert(result, rc.clone());
                         rc
                     };
                     self.push(Value::Obj(result));
                     None
                 }
-            }
-            (a,Value::Obj(b)) => match b.as_ref() {
+            },
+            (a, Value::Obj(b)) => match b.as_ref() {
                 Object::String(b) => {
                     let mut result = a.string();
                     result.push_str(&b);
                     //查常量表
-                    let result=if let Some(rc)=self.table.get(&result) {
+                    let result = if let Some(rc) = self.table.get(&result) {
                         rc.clone()
-                    }else{
-                        let rc=Rc::new(Object::String(result.to_string()));
+                    } else {
+                        let rc = Rc::new(Object::String(result.to_string()));
                         self.table.insert(result, rc.clone());
                         rc
                     };
                     self.push(Value::Obj(result));
                     None
                 }
-            }
+            },
             _ => {
                 self.runtime_error("Operands must be two numbers or two strings.");
                 Some(InterpretResult::InterpretRuntimeError)
@@ -274,8 +282,8 @@ impl VM {
     }
 }
 // VM全局表相关
-impl VM{
-    fn write_globals(&mut self,name:&str,value: Value) {
+impl VM {
+    fn write_globals(&mut self, name: &str, value: Value) {
         self.globals.insert(name.to_string(), value);
     }
 }

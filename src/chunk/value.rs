@@ -78,7 +78,7 @@ impl Value {
     pub fn string(&self) -> String {
         match self {
             Value::Double(number) => String::from(format!("{}", number)),
-            Value::Boolean(boolean) => String::from(format!("{}" , boolean)),
+            Value::Boolean(boolean) => String::from(format!("{}", boolean)),
             Value::Nil => String::from("nil"),
             Value::Obj(o) => o.string(),
         }

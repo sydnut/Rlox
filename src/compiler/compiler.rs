@@ -187,7 +187,7 @@ fn parse_expression(parser: &mut Parser, min_bp: u8) {
         //将中缀运算符写入chunk
         binary_op(parser, rop);
     }
-    if min_bp==0 && parser.match_token(TokenType::Equal){
+    if min_bp == 0 && parser.match_token(TokenType::Equal) {
         parser.error("Invalid assignment target.");
     }
 }
@@ -228,20 +228,14 @@ fn identifier(parser: &mut Parser, min_bp: u8) {
     if min_bp == 0 && parser.match_token(TokenType::Equal) {
         // 赋值：编译右值，emit OpSetGlobal
         expression(parser);
-        parser.chunk.write_global_op(
-            OpCode::OpSetGlobal,
-            OpCode::OpSetGlobalLong,
-            idx,
-            line,
-        );
+        parser
+            .chunk
+            .write_global_op(OpCode::OpSetGlobal, OpCode::OpSetGlobalLong, idx, line);
     } else {
         // 读变量：emit OpGetGlobal
-        parser.chunk.write_global_op(
-            OpCode::OpGetGlobal,
-            OpCode::OpGetGlobalLong,
-            idx,
-            line,
-        );
+        parser
+            .chunk
+            .write_global_op(OpCode::OpGetGlobal, OpCode::OpGetGlobalLong, idx, line);
     }
 }
 fn paren(parser: &mut Parser) {
@@ -282,14 +276,17 @@ fn expression(parser: &mut Parser) {
 }
 fn var_declaration(parser: &mut Parser) {
     let global = parser.parse_variable("Expect variable name.");
-    if parser.match_token(TokenType::Equal){
+    if parser.match_token(TokenType::Equal) {
         //赋值
         expression(parser);
-    }else{
+    } else {
         //隐式初始化为nil
         parser.emit_byte(OpCode::OpNil);
     }
-    parser.consume(TokenType::Semicolon, "Expect ';' after variable declaration.");
+    parser.consume(
+        TokenType::Semicolon,
+        "Expect ';' after variable declaration.",
+    );
     parser.define_variable(global);
 }
 fn expression_statement(parser: &mut Parser) {
